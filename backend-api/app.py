@@ -19,22 +19,38 @@ app = FastAPI(
 )
 
 # Mengaktifkan CORS agar dapat diakses dari berbagai origin (termasuk development Android / emulator)
+# Sesuai standar keamanan CORS (Issue #9): allow_credentials=False saat allow_origins=["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
+def resolve_model_path() -> str:
+    """Mencari path file model best.pt secara fleksibel (Issue #15, #16)."""
+    candidates = [
+        os.environ.get("MODEL_PATH", ""),
+        "artifacts/best.pt",
+        "backend-api/artifacts/best.pt",
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "artifacts", "best.pt"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "best.pt"),
+        "best.pt"
+    ]
+    for candidate in candidates:
+        if candidate and os.path.exists(candidate):
+            return candidate
+    return "artifacts/best.pt"
+
 # Path model YOLOv8 yang sudah dilatih
-MODEL_PATH = "artifacts/best.pt"
+MODEL_PATH = resolve_model_path()
 
 # Memuat model YOLOv8 saat server mulai
 try:
     if os.path.exists(MODEL_PATH):
         model = YOLO(MODEL_PATH)
-        logger.info(f"Model YOLOv8 berhasil dimuat dari {MODEL_PATH}")
+        logger.info(f"Model YOLOv8 berhasil dimuat dari: {MODEL_PATH}")
         logger.info(f"Daftar kelas model: {model.names}")
     else:
         logger.error(f"File model tidak ditemukan di {MODEL_PATH}")
@@ -225,23 +241,48 @@ def health_check():
     }
 
 
+# Batasan upload & keamanan (Issue #11)
+MAX_FILE_SIZE = 5 * 1024 * 1024  # Maksimal 5 MB
+ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "image/jpg"}
+
 @app.post("/predict")
 async def predict_apd(file: UploadFile = File(...), conf: float = 0.20):
     """
     Endpoint utama prediksi dan klasifikasi kepatuhan APD K3.
     Menerima file gambar via multipart/form-data dengan key 'file'.
-    Mendukung parameter query opsional 'conf' (default: 0.20, diagnostik: 0.15).
+    Mendukung parameter query opsional 'conf' (rentang valid: 0.05 s/d 0.95).
     """
+    # 1. Validasi rentang parameter conf (Issue #11)
+    if conf < 0.05 or conf > 0.95:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "success": False,
+                "message": "Parameter 'conf' harus berada dalam rentang 0.05 hingga 0.95."
+            }
+        )
+
+    # 2. Cek kesiapan model (Issue #15, #16)
     if model is None:
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
                 "success": False,
-                "message": "Model YOLOv8 belum berhasil dimuat di server. Periksa file artifacts/best.pt."
+                "message": "Model YOLOv8 belum berhasil dimuat di server. Periksa ketersediaan artifacts/best.pt."
             }
         )
 
-    # Validasi dan pembacaan file gambar
+    # 3. Validasi Content-Type / MIME Type (Issue #11)
+    if file.content_type and file.content_type.lower() not in ALLOWED_CONTENT_TYPES:
+        return JSONResponse(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            content={
+                "success": False,
+                "message": f"Tipe file '{file.content_type}' tidak didukung. Harap unggah gambar JPG atau PNG."
+            }
+        )
+
+    # 4. Pembacaan gambar dengan proteksi batas ukuran 5 MB (Issue #11)
     try:
         image_bytes = await file.read()
         if not image_bytes:
@@ -253,30 +294,43 @@ async def predict_apd(file: UploadFile = File(...), conf: float = 0.20):
                 }
             )
 
+        if len(image_bytes) > MAX_FILE_SIZE:
+            return JSONResponse(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                content={
+                    "success": False,
+                    "message": f"Ukuran file gambar melebihi batas maksimal 5 MB ({len(image_bytes) / (1024*1024):.2f} MB)."
+                }
+            )
+
+        # Verifikasi integritas gambar untuk mencegah decompression bomb / corrupt file
+        test_img = Image.open(io.BytesIO(image_bytes))
+        test_img.verify()
+
+        # Buka gambar untuk proses inferensi
         image = Image.open(io.BytesIO(image_bytes))
-        # Pastikan format gambar RGB
         if image.mode != "RGB":
             image = image.convert("RGB")
     except Exception as e:
-        logger.error(f"Error membaca file gambar: {e}")
+        logger.warning(f"Validasi/pembacaan file gambar gagal: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
                 "success": False,
-                "message": "File tidak dapat diproses. Pastikan format gambar valid (JPG/PNG)."
+                "message": "File tidak dapat diproses. Pastikan file adalah gambar JPG atau PNG yang valid."
             }
         )
 
-    # Menjalankan inferensi YOLOv8 dengan ambang batas confidence yang ditentukan
+    # 5. Menjalankan inferensi YOLOv8 dengan penanganan error aman (Issue #11)
     try:
         results = model(image, conf=conf)
     except Exception as e:
-        logger.error(f"Error saat inferensi YOLOv8: {e}")
+        logger.error(f"Error saat inferensi YOLOv8: {e}", exc_info=True)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "success": False,
-                "message": f"Terjadi kesalahan saat memproses deteksi objek: {str(e)}"
+                "message": "Terjadi kesalahan internal saat memproses deteksi objek."
             }
         )
 

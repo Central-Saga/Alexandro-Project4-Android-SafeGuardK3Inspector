@@ -63,7 +63,28 @@ Berikut adalah dokumentasi visual antarmuka aplikasi Android **SafeGuard K3 Insp
 | 🔍 1. Inspeksi Lapangan | 📋 2. Riwayat Inspeksi | 📖 3. Panduan Standar APD K3 |
 | :---: | :---: | :---: |
 | ![Halaman Inspeksi SafeGuard K3](docs/images/screenshot_inspeksi.png) | ![Halaman Riwayat SafeGuard K3](docs/images/screenshot_riwayat.png) | ![Halaman Panduan APD SafeGuard K3](docs/images/screenshot_panduan.png) |
-| *Input Foto (Kamera & Galeri), Bukti Visual & Analisis AI* | *Log Hasil Inspeksi, Status K3 & Ringkasan Metrik APD* | *Cakupan Deteksi YOLOv8 (6 Kelas) & Regulasi Standar K3* |
+## 🎬 Skenario Demonstrasi Aplikasi (Live Demo Flow)
+
+Untuk memvalidasi sistem secara *end-to-end* (Aplikasi Android Jetpack Compose $\leftrightarrow$ Backend FastAPI $\leftrightarrow$ Model YOLOv8):
+
+1. **Persiapan Koneksi:**
+   - Jalankan backend FastAPI pada port 8000: `uvicorn app:app --host 127.0.0.1 --port 8000`.
+   - Hubungkan HP Android ke PC via USB debugging dan aktifkan reverse port: `adb reverse tcp:8000 tcp:8000`.
+   - Buka aplikasi **SafeGuard K3 Inspector** di Android. Indikator backend di kanan atas akan berstatus *Server Siap*.
+
+2. **Skenario 1 — Pengujian Kepatuhan Lengkap (🟢 APD Lengkap):**
+   - Pada menu **Inspeksi Lapangan**, unggah/foto pekerja yang mengenakan helm dan rompi secara lengkap.
+   - Tekan tombol **Mulai Inspeksi**.
+   - Sistem menampilkan kotak deteksi warna (Biru: Pekerja, Hijau: Helm, Oranye: Rompi) serta badge status **🟢 APD LENGKAP**.
+
+3. **Skenario 2 — Pengujian Pelanggaran APD (🔴 APD Tidak Lengkap):**
+   - Unggah/foto pekerja di lapangan yang tidak memakai helm atau rompi.
+   - Tekan tombol **Mulai Inspeksi**.
+   - Sistem menandai dengan badge **🔴 APD TIDAK LENGKAP** beserta alasan evaluasi spesifik per pekerja.
+
+4. **Skenario 3 — Penyimpanan Log Riwayat Offline:**
+   - Tekan tombol simpan hasil inspeksi.
+   - Buka menu **Riwayat** untuk memeriksa catatan inspeksi yang tersimpan persisten secara offline di SQLite perangkat.
 
 ---
 
