@@ -1,5 +1,9 @@
 # SafeGuard K3 Inspector – Klasifikasi Kepatuhan Penggunaan APD Pekerja Berbasis Android Menggunakan YOLOv8
 
+<p align="center">
+  <img src="docs/images/safeguard_k3_logo.png" alt="SafeGuard K3 Logo" width="160" />
+</p>
+
 Aplikasi Android modern berbasis **Jetpack Compose** terintegrasi dengan backend **FastAPI** dan model deep learning **YOLOv8** untuk mendeteksi objek APD pada pekerja konstruksi/industri serta mengklasifikasikan kepatuhan keselamatan kerja (K3) secara komprehensif.
 
 ---
@@ -17,7 +21,7 @@ Aplikasi Android modern berbasis **Jetpack Compose** terintegrasi dengan backend
 
 ---
 
-## 📱 Fitur Aplikasi Android (SafeGuard K3 Inspector)
+## Fitur Utama (Features)
 
 Aplikasi dibangun dengan arsitektur modular Jetpack Compose menggunakan navigasi bawah (`NavigationBar`) dengan 4 menu utama:
 
@@ -52,9 +56,28 @@ Aplikasi dibangun dengan arsitektur modular Jetpack Compose menggunakan navigasi
 
 ---
 
-## 🛠️ Panduan Menjalankan Backend & Android
+## Screenshot & Tampilan Aplikasi (Target: 3 Tangkapan Layar)
 
-### 1. Menjalankan Backend FastAPI
+Berikut adalah dokumentasi visual antarmuka aplikasi Android **SafeGuard K3 Inspector**:
+
+| 🔍 1. Inspeksi Lapangan | 📋 2. Riwayat Inspeksi | 📖 3. Panduan Standar APD K3 |
+| :---: | :---: | :---: |
+| ![Halaman Inspeksi SafeGuard K3](docs/images/screenshot_inspeksi.png) | ![Halaman Riwayat SafeGuard K3](docs/images/screenshot_riwayat.png) | ![Halaman Panduan APD SafeGuard K3](docs/images/screenshot_panduan.png) |
+| *Input Foto (Kamera & Galeri), Bukti Visual & Analisis AI* | *Log Hasil Inspeksi, Status K3 & Ringkasan Metrik APD* | *Cakupan Deteksi YOLOv8 (6 Kelas) & Regulasi Standar K3* |
+
+---
+
+## Instalasi & Cara Menjalankan (Step-by-Step)
+
+Berikut panduan langkah demi langkah (step-by-step) untuk instalasi dan cara menjalankan backend serta aplikasi Android:
+
+### Prasyarat Sistem (Prerequisites)
+* Python 3.9+ dan pip
+* JDK 17 / JBR (Java Development Kit)
+* Android Studio / ADB (Android Debug Bridge)
+* Perangkat Android fisik atau Emulator dengan opsi USB Debugging aktif
+
+### Langkah 1: Instalasi & Cara Menjalankan Backend (FastAPI)
 Pastikan dependensi Python terpasang:
 ```bash
 cd d:/Klasifikasi-APD-K3
@@ -70,14 +93,14 @@ Verifikasi endpoint di browser:
 * Cek status server: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 * Dokumentasi Swagger: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-### 2. Menghubungkan Emulator/HP Android ke Backend Lokal
+### Langkah 2: Menghubungkan Emulator/HP Android ke Backend Lokal
 Hubungkan port 8000 perangkat Android ke server lokal menggunakan ADB:
 ```bash
 adb reverse tcp:8000 tcp:8000
 ```
 *(Dengan ADB Reverse, aplikasi Android dapat mengakses `http://127.0.0.1:8000/predict` secara langsung).*
 
-### 3. Build & Install Aplikasi Android
+### Langkah 3: Build & Instalasi Aplikasi Android (APK)
 Proyek Android berada di: `D:\AndroidProjects\SafeGuardK3`
 
 Untuk melakukan kompilasi dan perakitan APK:
