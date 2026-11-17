@@ -1,0 +1,6 @@
+# Dependensi untuk menjalankan test suite backend (dipakai CI).
+# Install: pip install -r requirements-dev.txt
+-r requirements.txt
+
+pytest>=8.0,<9.0
+httpx>=0.27
