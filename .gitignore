@@ -1,0 +1,34 @@
+# Secrets & konfigurasi lokal
+.env
+.env.*
+!.env.example
+*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# OS & editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.log
+
+# Android (build di level root)
+.gradle/
+build/
+local.properties
+captures/
+.cxx/
+*.iml
+
+# Catatan: artifacts/best.pt sengaja tetap di-track agar aplikasi bisa
+# langsung dijalankan tanpa training ulang. Jika nanti pindah ke Git LFS,
+# tambahkan pola *.pt di sini.

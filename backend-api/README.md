@@ -99,11 +99,23 @@ Berikut panduan langkah demi langkah (step-by-step) untuk instalasi dan cara men
 * Perangkat Android fisik atau Emulator dengan opsi USB Debugging aktif
 
 ### Langkah 1: Instalasi & Cara Menjalankan Backend (FastAPI)
-Pastikan dependensi Python terpasang:
+Pastikan dependensi Python terpasang (dari root repo):
 ```bash
-cd d:/Klasifikasi-APD-K3
+cd backend-api
 pip install -r requirements.txt
 ```
+
+(Opsional) Arahkan ke file model YOLOv8 lain tanpa mengubah kode:
+```bash
+# Linux / macOS
+export MODEL_PATH=/path/ke/best.pt
+```
+```powershell
+# Windows PowerShell
+$env:MODEL_PATH = "D:\path\ke\best.pt"
+```
+Jika `MODEL_PATH` kosong, backend otomatis mencari `artifacts/best.pt`, lalu
+`backend-api/artifacts/best.pt`. Contoh variabel ada di `backend-api/.env.example`.
 
 Jalankan server pengembangan FastAPI:
 ```bash
