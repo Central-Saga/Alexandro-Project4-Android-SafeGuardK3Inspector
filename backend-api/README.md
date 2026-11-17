@@ -157,3 +157,82 @@ adb install -r D:\AndroidProjects\SafeGuardK3\app\build\outputs\apk\debug\app-de
 ## 📦 Dataset & Bobot Model YOLOv8
 * File model pre-trained: `best.pt` (berada di root repositori backend).
 * Unduhan Dataset & Artifacts: [Google Drive Link](https://drive.google.com/file/d/14fpEcvpy2v0ukh_qp0mIfvq6lEaq0RVm/view?usp=sharing)
+* Dataset pelatihan: **PPE-DETECTION-14** (format YOLOv8, struktur `train/`, `valid/`, `test/` + `data.yaml`).
+
+## 🔁 Reproduksi Training & Metrik Model
+
+Jalur reproduksi resmi adalah CLI `backend-api/src/train.py`. Notebook EDA dan
+training tidak disertakan di repo karena tidak menyimpan output eksekusi —
+notebook tanpa output bukan bukti analisis. Semua angka di bawah dibaca
+langsung dari checkpoint `backend-api/artifacts/best.pt` (`train_args` dan
+`train_metrics`), bukan hasil pencatatan manual.
+
+### Konfigurasi training yang benar-benar dipakai
+
+| Parameter | Nilai |
+|---|---|
+| Base model | `yolov8n.pt` (pre-trained COCO) |
+| Epoch | 20 |
+| Batch size | 16 |
+| Image size | 640 |
+| Optimizer | `auto` (lr0 = 0.01) |
+| Patience | 100 |
+| Seed | 0 |
+| Environment | Kaggle GPU |
+| Ultralytics | 8.4.138 |
+| Tanggal training | 2026-09-03 |
+| Durasi | ± 0,87 jam (52 menit) |
+| Kelas | Gloves, Hard_hat, Mask, Person, Safety_boots, Vest |
+
+### Metrik validasi (epoch terakhir / bobot terbaik)
+
+| Metrik | Nilai |
+|---|---|
+| Precision (B) | 0,841 |
+| Recall (B) | 0,892 |
+| mAP@50 | 0,895 |
+| mAP@50-95 | 0,619 |
+| val/box_loss | 1,196 |
+| val/cls_loss | 0,921 |
+| val/dfl_loss | 1,312 |
+
+Catatan: aplikasi hanya mengevaluasi kepatuhan untuk kelas **Person**,
+**Hard_hat**, dan **Vest**. Tiga kelas lain (Mask, Gloves, Safety_boots)
+terdeteksi oleh model tetapi tidak dipakai dalam penilaian kepatuhan — lihat
+`supported_evaluation_classes` pada `/health`.
+
+### Cara menjalankan ulang training
+
+```bash
+cd backend-api
+pip install -r requirements.txt
+
+# data.yaml dari dataset PPE-DETECTION-14
+python src/train.py \
+  --data /path/ke/dataset/data.yaml \
+  --model yolov8n.pt \
+  --epochs 20 \
+  --batch 16 \
+  --imgsz 640 \
+  --patience 100 \
+  --project runs/train \
+  --name safeguard_k3_yolov8n
+```
+
+Output:
+
+* Bobot: `runs/train/safeguard_k3_yolov8n/weights/best.pt`
+* Metrik per epoch: `runs/train/safeguard_k3_yolov8n/results.csv` (kolom
+  `metrics/precision(B)`, `metrics/recall(B)`, `metrics/mAP50(B)`,
+  `metrics/mAP50-95(B)`)
+
+Untuk memeriksa ulang metrik pada dataset validasi:
+
+```bash
+yolo val model=runs/train/safeguard_k3_yolov8n/weights/best.pt data=/path/ke/dataset/data.yaml
+```
+
+> Default `--model` di `src/train.py` adalah `yolov8s.pt`, sedangkan checkpoint
+> yang disertakan di repo dilatih dari `yolov8n.pt`. Gunakan `--model yolov8n.pt`
+> bila ingin mereproduksi bobot yang ada saat ini.
+
